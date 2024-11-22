@@ -49,4 +49,4 @@ function checkConnection(host, port) {
 }
 
 // Example usage
-checkConnection("terminal-ip", 8000).then(console.log).catch(console.error);
+checkConnection("192.168.0.105", 1234).then(console.log).catch(console.error);
