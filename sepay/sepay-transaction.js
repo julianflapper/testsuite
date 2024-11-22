@@ -72,14 +72,17 @@ class SepayClient {
     return new Promise((resolve, reject) => {
       this.client = new net.Socket();
       this.client.connect(this.port, this.ip, () => resolve());
-      this.client.on("error", reject);
+      this.client.on("error", (err) => {
+        console.log("ERROR!!");
+        reject();
+      });
     });
   }
 
   sendPacket(packet) {
     return new Promise((resolve, reject) => {
       console.log("Sending Packet:", packet.toString("hex"));
-      this.client.once("data", (data) => {
+      this.client.on("data", (data) => {
         console.log("Received Packet: ", data);
         try {
           const response = parseResponse(data);
@@ -176,8 +179,8 @@ async function checkTerminalStatus(client, reference) {
     // console.log("Transaction Response: ", transactionResponse);
 
     // Example: Check transaction status
-    const statusResponse = await checkTransactionStatus(client, "AAA-123");
-    console.log("Status: ", statusResponse);
+    // const statusResponse = await checkTransactionStatus(client, "AAA-123");
+    // console.log("Status: ", statusResponse);
   } catch (error) {
     console.error("Error: ", error.message);
   } finally {
