@@ -54,7 +54,10 @@ function checkConnection(host, port) {
     });
 
     // Handle errors
-    client.on("error", reject);
+    client.on("error", (err) => {
+      console.log("Error");
+      reject();
+    });
     client.on("timeout", () => {
       client.destroy();
       reject(new Error("ERROR Connection timeout"));
