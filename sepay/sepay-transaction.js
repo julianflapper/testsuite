@@ -129,7 +129,10 @@ async function checkTransactionStatus(client, reference) {
   const client = new SepayClient(ip, port);
 
   try {
+    console.log("Connecting to Sepay terminal...");
     await client.connect();
+
+    console.log("Connected!");
 
     // Example: Create a transaction
     const transactionResponse = await createTransaction(
@@ -144,8 +147,9 @@ async function checkTransactionStatus(client, reference) {
     const statusResponse = await checkTransactionStatus(client, "AAA-123");
     console.log("Status: ", statusResponse);
   } catch (error) {
-    console.error("Error:", error.message);
+    console.error("Error: ", error.message);
   } finally {
     client.close();
   }
+  console.log("DONE!");
 })();
