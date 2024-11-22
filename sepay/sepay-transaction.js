@@ -25,7 +25,8 @@ function checkConnection(host, port) {
     // Create full buffer with calculated LRC
     const buffer = Buffer.concat([bufferWithoutLRC, Buffer.from([lrc])]);
 
-    console.log("Buffer created: " + buffer);
+    console.log("Buffer created");
+    console.log(buffer);
 
     // Create TCP client
     const client = new net.Socket();
