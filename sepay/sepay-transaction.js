@@ -88,7 +88,9 @@ class SepayClient {
           reject(error);
         }
       });
-      this.client.write(packet);
+      console.log("Sending...");
+      const sent = this.client.write(packet);
+      console.log("Sent: ", sent);
     });
   }
 
