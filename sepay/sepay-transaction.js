@@ -85,14 +85,17 @@ class SepayClient {
         console.log("Received Packet: ", data);
         resolve(data);
       });
-      this.client.write(data, (err) => {
+      console.log("Sending...");
+      const sent = this.client.write(data, (err) => {
         if (err) {
           console.error("Failed to send data:", err.message);
           reject(err);
         } else {
           console.log("Data sent successfully.");
+          resolve();
         }
       });
+      console.log("Sent: ", sent);
     });
   }
 
@@ -205,6 +208,7 @@ async function checkTerminalStatus(client, reference) {
   } catch (error) {
     console.error("Error: ", error.message);
   } finally {
+    console.log("Closing connection...");
     client.close();
   }
   console.log("DONE!");
