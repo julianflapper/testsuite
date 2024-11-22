@@ -166,8 +166,23 @@ async function checkTerminalStatus(client, reference) {
 
     console.log("Connected!");
 
-    const terminalStatus = await checkTerminalStatus(client);
-    console.log("Terminal Status: ", terminalStatus);
+    client.on("data", (data) => {
+      console.log("Received Packet: ", data);
+    });
+
+    const data = Buffer.from([0x93]);
+    console.log(data);
+    client.write(data, (err) => {
+      if (err) {
+        console.error("Failed to send data:", err.message);
+      } else {
+        console.log("SENT.");
+      }
+      client.end(); // Close the connection
+    });
+
+    // const terminalStatus = await checkTerminalStatus(client);
+    // console.log("Terminal Status: ", terminalStatus);
 
     // Example: Create a transaction
     // const transactionResponse = await createTransaction(
