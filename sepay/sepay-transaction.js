@@ -78,6 +78,7 @@ class SepayClient {
 
   sendPacket(packet) {
     return new Promise((resolve, reject) => {
+      console.log("Sending Packet:", packet.toString("hex"));
       this.client.once("data", (data) => {
         try {
           const response = parseResponse(data);
