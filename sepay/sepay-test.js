@@ -1,6 +1,6 @@
 const net = require("net");
 
-const ipAddress = "192.168.1.100";
+const ipAddress = "192.168.0.105";
 const port = 1234;
 const transactionCreate = {
   reference: "AAA-000",
@@ -22,7 +22,6 @@ function sendPacket(params) {
   console.log(`Sending to ${ipAddress}:${port}`);
   const client = new net.Socket();
 
-  // Data to send (equivalent to { 0x93 } in C++)
   const data = Buffer.from([0x93]);
 
   // Connect to the server
