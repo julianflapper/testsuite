@@ -22,7 +22,7 @@ function sendPacket(params) {
   console.log(`Sending to ${ipAddress}:${port}`);
   const client = new net.Socket();
 
-  const data = Buffer.from([0x93]);
+  const data = Buffer.from([0x99]);
   console.log(data);
 
   // Connect to the server
