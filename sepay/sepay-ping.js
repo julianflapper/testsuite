@@ -25,6 +25,11 @@ function sendPacket(params) {
   const data = Buffer.from([0x99]);
   console.log(data);
 
+  client.on("data", (data) => {
+    console.error("DATA: ", data);
+    client.end(); // Close the connection
+  });
+
   // Connect to the server
   client.connect(port, ipAddress, () => {
     console.log("Connected to server.");
@@ -34,7 +39,6 @@ function sendPacket(params) {
       } else {
         console.log("Data sent successfully.");
       }
-      client.end(); // Close the connection
     });
   });
 
