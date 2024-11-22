@@ -24,7 +24,7 @@ function sendPacket(params) {
 
   const data = Buffer.from([0x05]);
 
-  client.once("data", (data) => {
+  client.on("data", (data) => {
     console.log("Received Packet: ", data);
     try {
       // const response = parseResponse(data);
