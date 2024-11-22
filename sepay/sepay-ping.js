@@ -23,6 +23,7 @@ function sendPacket(params) {
   const client = new net.Socket();
 
   const data = Buffer.from([0x93]);
+  console.log(data);
 
   // Connect to the server
   client.connect(port, ipAddress, () => {
