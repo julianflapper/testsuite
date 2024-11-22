@@ -81,8 +81,10 @@ class SepayClient {
       this.client.once("data", (data) => {
         try {
           const response = parseResponse(data);
+          console.log("Packet success: ", data);
           resolve(response);
         } catch (error) {
+          console.log("Error sending packet: ", error.message);
           reject(error);
         }
       });
