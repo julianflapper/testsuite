@@ -25,14 +25,18 @@ function checkConnection(host, port) {
     // Create full buffer with calculated LRC
     const buffer = Buffer.concat([bufferWithoutLRC, Buffer.from([lrc])]);
 
+    console.log("Buffer created: " + buffer);
+
     // Create TCP client
     const client = new net.Socket();
 
     // Set connection timeout
     client.setTimeout(5000);
 
+    console.log("Connecting...");
     client.connect(port, host, () => {
       // Send check connection command
+      console.log("Writing...");
       client.write(buffer);
     });
 
