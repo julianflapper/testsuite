@@ -166,7 +166,7 @@ async function checkTerminalStatus(client, reference) {
 
     console.log("Connected!");
 
-    client.on("data", (data) => {
+    client.once("data", (data) => {
       console.log("Received Packet: ", data);
     });
 
