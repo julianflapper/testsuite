@@ -183,7 +183,7 @@ async function checkTerminalStatus(client, reference) {
 
     console.log("Connected!");
 
-    const data = Buffer.from([0x93]);
+    const data = Buffer.from([0x05]);
     console.log(data);
     client.sendData(data);
 
