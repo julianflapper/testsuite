@@ -1,6 +1,16 @@
 const net = require("net");
 
-function sendPacket(ipAddress, port = 1234) {
+const ipAddress = "192.168.1.100";
+const port = 1234;
+const transactionCreate = {
+  reference: "AAA-000",
+  amount: 10,
+};
+
+sendPacket({ ipAddress, port, transactionCreate });
+
+function sendPacket(params) {
+  const { ipAddress, port, transactionCreate } = params;
   // Validate input
   if (!ipAddress) {
     console.error(
@@ -36,10 +46,3 @@ function sendPacket(ipAddress, port = 1234) {
     console.log("Connection closed.");
   });
 }
-
-// Example usage
-const args = process.argv.slice(2); // Command-line arguments
-const ipAddress = args[0];
-const port = args[1] ? parseInt(args[1], 10) : 1234;
-
-sendPacket(ipAddress, port);
