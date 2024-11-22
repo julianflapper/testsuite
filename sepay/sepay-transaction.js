@@ -37,7 +37,7 @@ function checkConnection(host, port) {
     const client = new net.Socket();
 
     // Handle response
-    client.on("data", (data) => {
+    client.once("data", (data) => {
       console.log("DATA RECEIVED: " + data);
       // Parse response according to protocol
       const responseCode = data[4];
