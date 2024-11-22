@@ -137,6 +137,19 @@ async function checkTransactionStatus(client, reference) {
 }
 
 /**
+ * Checks the status of the terminal
+ */
+async function checkTerminalStatus(client, reference) {
+  console.log("Checking terminal status...");
+  const packet = buildPacket("\x05");
+  console.log("Packet: ", packet);
+
+  const response = await client.sendPacket(packet);
+  console.log("Terminal Status Response:", response);
+  return response;
+}
+
+/**
  * Example usage
  */
 (async () => {
