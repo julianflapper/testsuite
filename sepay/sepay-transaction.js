@@ -99,12 +99,13 @@ class SepayClient {
  * Creates a payment transaction
  */
 async function createTransaction(client, amount, reference, merchantRef = "") {
+  console.log("Starting transaction...");
   const amountInCents = String(amount * 100).padStart(12, "0");
   const content = `${amountInCents}|${reference}|${merchantRef}|0`;
   const packet = buildPacket("\x01", content);
 
   const response = await client.sendPacket(packet);
-  console.log("Create Transaction Response:", response);
+  console.log("Create Transaction Response: ", response);
   return response;
 }
 
@@ -112,6 +113,7 @@ async function createTransaction(client, amount, reference, merchantRef = "") {
  * Checks the status of a transaction
  */
 async function checkTransactionStatus(client, reference) {
+  console.log("Checking transaction status...");
   const content = `${reference}`;
   const packet = buildPacket("\x03", content);
 
