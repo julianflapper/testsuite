@@ -163,14 +163,17 @@ async function checkTerminalStatus(client, reference) {
 
     console.log("Connected!");
 
+    const terminalStatus = await checkTerminalStatus(client);
+    console.log("Terminal Status: ", terminalStatus);
+
     // Example: Create a transaction
-    const transactionResponse = await createTransaction(
-      client,
-      12.34,
-      "AAA-123",
-      "MRCHT45"
-    );
-    console.log("Transaction Response: ", transactionResponse);
+    // const transactionResponse = await createTransaction(
+    //   client,
+    //   12.34,
+    //   "AAA-123",
+    //   "MRCHT45"
+    // );
+    // console.log("Transaction Response: ", transactionResponse);
 
     // Example: Check transaction status
     const statusResponse = await checkTransactionStatus(client, "AAA-123");
