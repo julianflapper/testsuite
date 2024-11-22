@@ -11,7 +11,7 @@ function calculateLRC(buffer) {
   return buffer.reduce((lrc, byte) => lrc ^ byte, 0);
 }
 
-const commandExtMode = Buffer.from([0x02, 0x00, 0x01, 0x95, 0x7c, 0x03]); // STX, LEN, CMD, FLAG, ETX
+const commandExtMode = Buffer.from([0x02, 0x00, 0x02, 0x95, 0x7c, 0x03]); // STX, LEN, CMD, FLAG, ETX
 const lrcExtMode = calculateLRC(commandExtMode);
 const fullPacketExtMode = Buffer.concat([
   commandExtMode,

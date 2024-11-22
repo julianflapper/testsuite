@@ -12,9 +12,11 @@ function calculateLRC(buffer) {
 }
 
 // Create ENQ command packet
-const commandENQ = Buffer.from([0x02, 0x00, 0x01, 0x05, 0x7c, 0x03]); // STX, LEN, CMD, FLAG, ETX
+const commandENQ = Buffer.from([0x02, 0x00, 0x02, 0x05, 0x7c, 0x03]); // STX, LEN, CMD, FLAG, ETX
 const lrcENQ = calculateLRC(commandENQ);
 const fullPacketENQ = Buffer.concat([commandENQ, Buffer.from([lrcENQ])]);
+
+console.log(fullPacketENQ);
 
 socket.connect(TERMINAL_PORT, TERMINAL_IP, () => {
   console.log("Connected to terminal");

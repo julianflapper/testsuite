@@ -17,7 +17,7 @@ function checkConnection(host, port) {
     const bufferWithoutLRC = Buffer.from([
       0x02, // STX
       0x00,
-      0x00, // Length (0 bytes for content)
+      0x02, // Length (0 bytes for content)
       0x99, // Command 0x99 (Check Connection)
       0x03, // ETX
     ]);
