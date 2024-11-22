@@ -22,7 +22,17 @@ function sendPacket(params) {
   console.log(`Sending to ${ipAddress}:${port}`);
   const client = new net.Socket();
 
-  const data = Buffer.from([0x93]);
+  const data = Buffer.from([0x05]);
+
+  client.once("data", (data) => {
+    console.log("Received Packet: ", data);
+    try {
+      // const response = parseResponse(data);
+      console.log("Packet success: ", data);
+    } catch (error) {
+      console.log("Error sending packet: ", error.message);
+    }
+  });
 
   // Connect to the server
   client.connect(port, ipAddress, () => {
@@ -35,18 +45,6 @@ function sendPacket(params) {
       }
       client.end(); // Close the connection
     });
-  });
-
-  client.once("data", (data) => {
-    console.log("Received Packet: ", data);
-    try {
-      // const response = parseResponse(data);
-      console.log("Packet success: ", data);
-      resolve(data);
-    } catch (error) {
-      console.log("Error sending packet: ", error.message);
-      reject(error);
-    }
   });
 
   client.on("error", (err) => {
