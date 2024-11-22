@@ -1,10 +1,15 @@
 const net = require("net");
 
 function calculateLRC(buffer) {
-  // XOR all bytes from STX to ETX
-  return buffer.slice(0, -1).reduce((lrc, byte) => lrc ^ byte, 0);
-}
+  let lrc = 0; // Start with 0, assuming XOR operation starts with a neutral element.
 
+  // Iterate over each byte of the buffer
+  for (let i = 0; i < buffer.length; i++) {
+    lrc ^= buffer[i]; // XOR current byte with the accumulated result
+  }
+
+  return lrc;
+}
 function checkConnection(host, port) {
   console.log("Checking connection to " + host + ":" + port);
   return new Promise((resolve, reject) => {
