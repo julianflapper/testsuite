@@ -40,9 +40,9 @@ function sendPacket(params) {
   client.once("data", (data) => {
     console.log("Received Packet: ", data);
     try {
-      const response = parseResponse(data);
+      // const response = parseResponse(data);
       console.log("Packet success: ", data);
-      resolve(response);
+      resolve(data);
     } catch (error) {
       console.log("Error sending packet: ", error.message);
       reject(error);
