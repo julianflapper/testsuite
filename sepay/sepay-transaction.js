@@ -91,8 +91,7 @@ class SepayClient {
           console.error("Failed to send data:", err.message);
           reject(err);
         } else {
-          console.log("Data sent successfully.");
-          resolve();
+          console.log("Data sent successfully, waiting for response...");
         }
       });
       console.log("Sent: ", sent);
