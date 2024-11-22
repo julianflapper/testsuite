@@ -79,6 +79,23 @@ class SepayClient {
     });
   }
 
+  sendData(data) {
+    return new Promise((resolve, reject) => {
+      this.client.on("data", (data) => {
+        console.log("Received Packet: ", data);
+        resolve(data);
+      });
+      this.client.write(data, (err) => {
+        if (err) {
+          console.error("Failed to send data:", err.message);
+          reject(err);
+        } else {
+          console.log("Data sent successfully.");
+        }
+      });
+    });
+  }
+
   sendPacket(packet) {
     return new Promise((resolve, reject) => {
       console.log("Sending Packet:", packet.toString("hex"));
@@ -166,20 +183,9 @@ async function checkTerminalStatus(client, reference) {
 
     console.log("Connected!");
 
-    client.once("data", (data) => {
-      console.log("Received Packet: ", data);
-    });
-
     const data = Buffer.from([0x93]);
     console.log(data);
-    client.write(data, (err) => {
-      if (err) {
-        console.error("Failed to send data:", err.message);
-      } else {
-        console.log("SENT.");
-      }
-      client.end(); // Close the connection
-    });
+    client.sendData(data);
 
     // const terminalStatus = await checkTerminalStatus(client);
     // console.log("Terminal Status: ", terminalStatus);
