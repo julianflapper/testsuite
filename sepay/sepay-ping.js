@@ -37,6 +37,18 @@ function sendPacket(params) {
     });
   });
 
+  client.once("data", (data) => {
+    console.log("Received Packet: ", data);
+    try {
+      const response = parseResponse(data);
+      console.log("Packet success: ", data);
+      resolve(response);
+    } catch (error) {
+      console.log("Error sending packet: ", error.message);
+      reject(error);
+    }
+  });
+
   client.on("error", (err) => {
     console.error("Error:", err.message);
   });
