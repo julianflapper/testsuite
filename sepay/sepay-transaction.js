@@ -188,7 +188,7 @@ async function checkTerminalStatus(client, reference) {
 
     const data = Buffer.from([0x05]);
     console.log(data);
-    client.sendData(data);
+    await client.sendData(data);
 
     // const terminalStatus = await checkTerminalStatus(client);
     // console.log("Terminal Status: ", terminalStatus);
