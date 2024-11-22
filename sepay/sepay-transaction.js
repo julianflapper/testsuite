@@ -30,13 +30,6 @@ function checkConnection(host, port) {
     // Create TCP client
     const client = new net.Socket();
 
-    console.log("Connecting...");
-    client.connect(port, host, () => {
-      // Send check connection command
-      console.log("Writing...");
-      client.write(buffer);
-    });
-
     // Handle response
     client.on("data", (data) => {
       console.log("DATA RECEIVED: " + data);
@@ -61,8 +54,12 @@ function checkConnection(host, port) {
       reject(new Error("ERROR Connection timeout"));
     });
 
-    // Set connection timeout
-    client.setTimeout(5000);
+    console.log("Connecting...");
+    client.connect(port, host, () => {
+      // Send check connection command
+      console.log("Writing...");
+      client.write(buffer);
+    });
   });
 }
 
