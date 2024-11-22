@@ -8,31 +8,40 @@ function calculateLRC(data) {
 }
 
 /**
- * Builds a Sepay packet
+ * Builds a Sepay packet following the specification:
+ * STX LEN CMD FLAG CONTENT ETX LRC
  */
 function buildPacket(command, content = "") {
   const STX = 0x02; // Start of text
   const ETX = 0x03; // End of text
-  const FLAG = "|".charCodeAt(0); // Separator
-  const CMD = command.charCodeAt(0);
+  const FLAG = 0x7c; // '|' character
+  const CMD = typeof command === "string" ? command.charCodeAt(0) : command;
 
-  // Convert content to buffer
+  // Convert content to buffer if it's a string
   const contentBuffer = Buffer.from(content, "utf8");
-  const len = contentBuffer.length + 2; // CMD + FLAG + content length
+
+  // Calculate length: CMD (1) + FLAG (1) + content length
+  const len = 2 + contentBuffer.length;
   const lenBuffer = Buffer.from([Math.floor(len / 256), len % 256]);
 
-  const packet = Buffer.concat([
-    Buffer.from([STX]), // Start of packet
-    lenBuffer, // Length
-    Buffer.from([CMD]), // Command
-    Buffer.from([FLAG]), // Flag
-    contentBuffer, // Content
-    Buffer.from([ETX]), // End of packet
+  // Build the main packet (excluding STX and LRC)
+  const packetContent = Buffer.concat([
+    lenBuffer, // Length (2 bytes)
+    Buffer.from([CMD]), // Command (1 byte)
+    Buffer.from([FLAG]), // Flag (1 byte)
+    contentBuffer, // Content (n bytes)
+    Buffer.from([ETX]), // ETX (1 byte)
   ]);
 
-  // Calculate LRC
-  const lrc = calculateLRC(packet.slice(1)); // Exclude STX
-  return Buffer.concat([packet, Buffer.from([lrc])]);
+  // Calculate LRC over everything except STX
+  const lrc = calculateLRC(packetContent);
+
+  // Combine everything into final packet
+  return Buffer.concat([
+    Buffer.from([STX]), // STX
+    packetContent, // Main packet content
+    Buffer.from([lrc]), // LRC
+  ]);
 }
 
 /**
@@ -42,173 +51,140 @@ function parseResponse(data) {
   const STX = 0x02;
   const ETX = 0x03;
 
+  // Validate packet structure
   if (data[0] !== STX || data[data.length - 2] !== ETX) {
     throw new Error("Invalid packet structure");
   }
 
-  const len = data.readUInt16BE(1);
-  const cmd = String.fromCharCode(data[3]);
-  const content = data.slice(5, 5 + len - 2).toString("utf8");
+  // Parse length from first two bytes after STX
+  const len = (data[1] << 8) + data[2];
+
+  // Get command byte
+  const cmd = data[3];
+
+  // Extract content (everything between FLAG and ETX)
+  const content = data.slice(5, data.length - 2).toString("utf8");
+
+  // Get LRC
   const lrc = data[data.length - 1];
 
   // Verify LRC
-  if (calculateLRC(data.slice(1, -1)) !== lrc) {
+  const calculatedLRC = calculateLRC(data.slice(1, data.length - 1));
+  if (calculatedLRC !== lrc) {
     throw new Error("LRC mismatch");
   }
 
   return { cmd, content };
 }
 
-/**
- * Connects to the Sepay terminal
- */
 class SepayClient {
   constructor(ip, port) {
     this.ip = ip;
     this.port = port;
+    this.client = null;
+    this.responseHandlers = new Map();
   }
 
   connect() {
     return new Promise((resolve, reject) => {
       this.client = new net.Socket();
-      this.client.connect(this.port, this.ip, () => resolve());
-      this.client.on("error", (err) => {
-        console.log("ERROR!!");
-        reject();
-      });
-    });
-  }
 
-  sendData(data) {
-    return new Promise((resolve, reject) => {
-      this.client.once("data", (data) => {
-        console.log("Received Packet: ", data);
-        resolve(data);
-      });
-      console.log("Sending...");
-      const sent = this.client.write(data, (err) => {
-        if (err) {
-          console.error("Failed to send data:", err.message);
-          reject(err);
-        } else {
-          console.log("Data sent successfully, waiting for response...");
+      this.client.on("data", (data) => {
+        try {
+          console.log("Received raw data:", data.toString("hex"));
+          const response = parseResponse(data);
+          console.log("Parsed response:", response);
+
+          // Handle the response based on command
+          const handler = this.responseHandlers.get(response.cmd);
+          if (handler) {
+            handler.resolve(response);
+            this.responseHandlers.delete(response.cmd);
+          }
+        } catch (error) {
+          console.error("Error parsing response:", error);
+          // Reject any pending handlers if we can't parse the response
+          for (const handler of this.responseHandlers.values()) {
+            handler.reject(error);
+          }
+          this.responseHandlers.clear();
         }
       });
-      console.log("Sent: ", sent);
+
+      this.client.on("error", (error) => {
+        console.error("Socket error:", error);
+        reject(error);
+      });
+
+      this.client.connect(this.port, this.ip, () => {
+        console.log("Connected to terminal");
+        resolve();
+      });
     });
   }
 
-  sendPacket(packet) {
+  async sendCommand(command, content = "") {
+    if (!this.client) {
+      throw new Error("Not connected to terminal");
+    }
+
+    const packet = buildPacket(command, content);
+    console.log("Sending packet:", packet.toString("hex"));
+
     return new Promise((resolve, reject) => {
-      console.log("Sending Packet:", packet.toString("hex"));
-      this.client.on("data", (data) => {
-        console.log("Received Packet: ", data);
-        try {
-          const response = parseResponse(data);
-          console.log("Packet success: ", data);
-          resolve(response);
-        } catch (error) {
-          console.log("Error sending packet: ", error.message);
+      // Store the handler for this command
+      this.responseHandlers.set(command, { resolve, reject });
+
+      this.client.write(packet, (error) => {
+        if (error) {
+          this.responseHandlers.delete(command);
           reject(error);
         }
       });
-      console.log("Sending...");
-      const sent = this.client.write(packet);
-      console.log("Sent: ", sent);
+
+      // Set a timeout for the response
+      setTimeout(() => {
+        if (this.responseHandlers.has(command)) {
+          this.responseHandlers.delete(command);
+          reject(new Error("Response timeout"));
+        }
+      }, 5000); // 5 second timeout
     });
   }
 
+  async checkTerminalStatus() {
+    console.log("Checking terminal status...");
+    return this.sendCommand(0x05); // ENQ command
+  }
+
   close() {
-    this.client.destroy();
+    if (this.client) {
+      this.client.destroy();
+      this.client = null;
+    }
   }
 }
 
-/**
- * Creates a payment transaction
- */
-async function createTransaction(client, amount, reference, merchantRef = "") {
-  console.log("Starting transaction...");
-  const amountInCents = String(amount * 100).padStart(12, "0");
-  const content = `${amountInCents}|${reference}|${merchantRef}|0`;
-
-  console.log("Amount: ", amountInCents);
-  console.log("Content: ", content);
-
-  const packet = buildPacket("\x01", content);
-
-  console.log("Packet: ", packet);
-
-  const response = await client.sendPacket(packet);
-  console.log("Create Transaction Response: ", response);
-  return response;
-}
-
-/**
- * Checks the status of a transaction
- */
-async function checkTransactionStatus(client, reference) {
-  console.log("Checking transaction status...");
-  const content = `${reference}`;
-  const packet = buildPacket("\x03", content);
-
-  console.log("Packet: ", packet);
-
-  const response = await client.sendPacket(packet);
-  console.log("Transaction Status Response:", response);
-  return response;
-}
-
-/**
- * Checks the status of the terminal
- */
-async function checkTerminalStatus(client, reference) {
-  console.log("Checking terminal status...");
-  const packet = buildPacket("\x05");
-  console.log("Packet: ", packet);
-
-  const response = await client.sendPacket(packet);
-  console.log("Terminal Status Response:", response);
-  return response;
-}
-
-/**
- * Example usage
- */
-(async () => {
-  const ip = "192.168.0.105"; // Replace with terminal IP
-  const port = 1234; // Replace with terminal port
-  const client = new SepayClient(ip, port);
+// Example usage
+async function main() {
+  const client = new SepayClient("192.168.0.105", 1234);
 
   try {
-    console.log("Connecting to Sepay terminal...");
     await client.connect();
+    console.log("Connected to terminal");
 
-    console.log("Connected!");
-
-    const data = Buffer.from([0x05]);
-    console.log(data);
-    await client.sendData(data);
-
-    // const terminalStatus = await checkTerminalStatus(client);
-    // console.log("Terminal Status: ", terminalStatus);
-
-    // Example: Create a transaction
-    // const transactionResponse = await createTransaction(
-    //   client,
-    //   12.34,
-    //   "AAA-123",
-    //   "MRCHT45"
-    // );
-    // console.log("Transaction Response: ", transactionResponse);
-
-    // Example: Check transaction status
-    // const statusResponse = await checkTransactionStatus(client, "AAA-123");
-    // console.log("Status: ", statusResponse);
+    const status = await client.checkTerminalStatus();
+    console.log("Terminal status:", status);
   } catch (error) {
-    console.error("Error: ", error.message);
+    console.error("Error:", error);
   } finally {
-    console.log("Closing connection...");
     client.close();
   }
-  console.log("DONE!");
-})();
+}
+
+// Export for use in other files
+module.exports = { SepayClient };
+
+if (require.main === module) {
+  main().catch(console.error);
+}
