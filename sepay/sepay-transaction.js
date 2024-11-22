@@ -83,6 +83,7 @@ class SepayClient {
     this.port = port;
     this.client = null;
     this.responseHandlers = new Map();
+    this.extendedMode = false; // Track if we're in extended mode
   }
 
   connect() {
@@ -94,6 +95,20 @@ class SepayClient {
           console.log("Received raw data:", data.toString("hex"));
           const response = parseResponse(data);
           console.log("Parsed response:", response);
+
+          // Handle ACK/NACK in extended mode
+          if (this.extendedMode) {
+            if (response.cmd === 0x06) {
+              // ACK
+              console.log("Received ACK");
+              return;
+            } else if (response.cmd === 0x15) {
+              // NACK
+              console.log("Received NACK");
+              // Implement retry logic here
+              return;
+            }
+          }
 
           // Handle the response based on command
           const handler = this.responseHandlers.get(response.cmd);
@@ -116,9 +131,17 @@ class SepayClient {
         reject(error);
       });
 
-      this.client.connect(this.port, this.ip, () => {
+      this.client.connect(this.port, this.ip, async () => {
         console.log("Connected to terminal");
-        resolve();
+        try {
+          // Enable extended mode on connection
+          await this.setExtendedMode(true);
+          // Set ECR only mode
+          await this.setECRMode();
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
       });
     });
   }
@@ -129,11 +152,32 @@ class SepayClient {
     }
 
     const packet = buildPacket(command, content);
-    console.log("Sending packet:", packet);
+    console.log("Sending packet:", packet.toString("hex"));
 
     return new Promise((resolve, reject) => {
-      // Store the handler for this command
-      this.responseHandlers.set(command, { resolve, reject });
+      // If in extended mode and not a simple command, wait for ACK first
+      const isSimpleCommand = [
+        0x05, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98,
+      ].includes(command);
+
+      if (this.extendedMode && !isSimpleCommand) {
+        // Store handler for ACK
+        this.responseHandlers.set(0x06, {
+          resolve: async () => {
+            // After ACK, wait for actual response
+            try {
+              const response = await this.waitForResponse(command);
+              resolve(response);
+            } catch (error) {
+              reject(error);
+            }
+          },
+          reject,
+        });
+      } else {
+        // Store handler for direct response
+        this.responseHandlers.set(command, { resolve, reject });
+      }
 
       this.client.write(packet, (error) => {
         if (error) {
@@ -148,13 +192,37 @@ class SepayClient {
           this.responseHandlers.delete(command);
           reject(new Error("Response timeout"));
         }
-      }, 5000); // 5 second timeout
+      }, 30000); // 30 second timeout for payment commands
     });
+  }
+
+  async waitForResponse(command) {
+    return new Promise((resolve, reject) => {
+      this.responseHandlers.set(command, { resolve, reject });
+    });
+  }
+
+  async setExtendedMode(enabled) {
+    const command = enabled ? 0x95 : 0x94;
+    const response = await this.sendCommand(command);
+    this.extendedMode = enabled;
+    return response;
+  }
+
+  async setECRMode() {
+    return this.sendCommand(0x97); // ECR only mode
   }
 
   async checkTerminalStatus() {
     console.log("Checking terminal status...");
     return this.sendCommand(0x05); // ENQ command
+  }
+
+  async initiatePayment(amount, ecrRef, merchantRef, printTickets = 0) {
+    const content = `${amount
+      .toString()
+      .padStart(12, "0")}|${ecrRef}|${merchantRef}|${printTickets}`;
+    return this.sendCommand(0x01, content);
   }
 
   close() {
@@ -165,26 +233,30 @@ class SepayClient {
   }
 }
 
-// Example usage
-async function main() {
-  const client = new SepayClient("192.168.0.105", 1234);
-
-  try {
-    await client.connect();
-    console.log("Connected to terminal");
-
-    const status = await client.checkTerminalStatus();
-    console.log("Terminal status:", status);
-  } catch (error) {
-    console.error("Error:", error);
-  } finally {
-    client.close();
-  }
-}
-
-// Export for use in other files
 module.exports = { SepayClient };
 
+// Example usage
 if (require.main === module) {
+  async function main() {
+    const client = new SepayClient("192.168.0.105", 1234);
+
+    try {
+      await client.connect();
+      console.log("Connected to terminal");
+
+      // First check terminal status
+      const status = await client.checkTerminalStatus();
+      console.log("Terminal status:", status);
+
+      // Then try a payment
+      const payment = await client.initiatePayment(1234, "ECR123", "MRCHT45");
+      console.log("Payment result:", payment);
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      client.close();
+    }
+  }
+
   main().catch(console.error);
 }
