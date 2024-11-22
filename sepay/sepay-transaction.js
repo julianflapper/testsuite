@@ -102,7 +102,13 @@ async function createTransaction(client, amount, reference, merchantRef = "") {
   console.log("Starting transaction...");
   const amountInCents = String(amount * 100).padStart(12, "0");
   const content = `${amountInCents}|${reference}|${merchantRef}|0`;
+
+  console.log("Amount: ", amountInCents);
+  console.log("Content: ", content);
+
   const packet = buildPacket("\x01", content);
+
+  console.log("Packet: ", packet);
 
   const response = await client.sendPacket(packet);
   console.log("Create Transaction Response: ", response);
@@ -116,6 +122,8 @@ async function checkTransactionStatus(client, reference) {
   console.log("Checking transaction status...");
   const content = `${reference}`;
   const packet = buildPacket("\x03", content);
+
+  console.log("Packet: ", packet);
 
   const response = await client.sendPacket(packet);
   console.log("Transaction Status Response:", response);
