@@ -1,16 +1,29 @@
 const net = require("net");
 
+function calculateLRC(buffer) {
+  // XOR all bytes from STX to ETX
+  return buffer.slice(0, -1).reduce((lrc, byte) => lrc ^ byte, 0);
+}
+
 function checkConnection(host, port) {
+  console.log("Checking connection to " + host + ":" + port);
   return new Promise((resolve, reject) => {
     // Create connection buffer
-    const buffer = Buffer.from([
+    const bufferWithoutLRC = Buffer.from([
       0x02, // STX
       0x00,
       0x00, // Length (0 bytes for content)
       0x99, // Command 0x99 (Check Connection)
       0x03, // ETX
-      0x00, // LRC (placeholder, would be calculated by XORing)
     ]);
+
+    // Calculate LRC
+    const lrc = calculateLRC(
+      Buffer.concat([bufferWithoutLRC, Buffer.from([0x00])])
+    );
+
+    // Create full buffer with calculated LRC
+    const buffer = Buffer.concat([bufferWithoutLRC, Buffer.from([lrc])]);
 
     // Create TCP client
     const client = new net.Socket();
@@ -25,6 +38,7 @@ function checkConnection(host, port) {
 
     // Handle response
     client.on("data", (data) => {
+      console.log("DATA RECEIVED: " + data);
       // Parse response according to protocol
       const responseCode = data[4];
       const applicationVersion = data.slice(5).toString("utf8").split("/")[0];
