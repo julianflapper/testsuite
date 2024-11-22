@@ -22,7 +22,7 @@ function sendPacket(params) {
   console.log(`Sending to ${ipAddress}:${port}`);
   const client = new net.Socket();
 
-  const data = Buffer.from([0x93]);
+  const data = Buffer.from([0x99]);
   console.log(data);
 
   client.on("data", (data) => {
@@ -38,14 +38,18 @@ function sendPacket(params) {
     console.log("Connection closed.");
   });
 
+  client.on("end", () => {
+    console.log("disconnected from server");
+  });
+
   // Connect to the server
   client.connect(port, ipAddress, () => {
-    console.log("Connected to server.");
+    console.log("Connected to server...");
     client.write(data, (err) => {
       if (err) {
         console.error("Failed to send data:", err.message);
       } else {
-        console.log("Data sent successfully.");
+        console.log("Data sent successfully...");
       }
     });
   });
