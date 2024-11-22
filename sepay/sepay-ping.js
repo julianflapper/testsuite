@@ -30,6 +30,14 @@ function sendPacket(params) {
     client.end(); // Close the connection
   });
 
+  client.on("error", (err) => {
+    console.error("Error:", err.message);
+  });
+
+  client.on("close", () => {
+    console.log("Connection closed.");
+  });
+
   // Connect to the server
   client.connect(port, ipAddress, () => {
     console.log("Connected to server.");
@@ -40,13 +48,5 @@ function sendPacket(params) {
         console.log("Data sent successfully.");
       }
     });
-  });
-
-  client.on("error", (err) => {
-    console.error("Error:", err.message);
-  });
-
-  client.on("close", () => {
-    console.log("Connection closed.");
   });
 }
