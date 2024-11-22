@@ -129,7 +129,7 @@ class SepayClient {
     }
 
     const packet = buildPacket(command, content);
-    console.log("Sending packet:", packet.toString("hex"));
+    console.log("Sending packet:", packet);
 
     return new Promise((resolve, reject) => {
       // Store the handler for this command
